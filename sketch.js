@@ -858,10 +858,10 @@ function draw() {
     stroke(40, 200)
     line(x - 5, y, x + 5, y)
     line(x, y - 5, x, y + 5)
-    push()
-    fill(0)
-    text('absolute x: ' + x, 200, 350)
-    pop()
+    // push()
+    // fill(0)
+    // text('absolute x: ' + x, 200, 350)
+    // pop()
 }
 
 
