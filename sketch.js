@@ -16,16 +16,38 @@ const animatedProperties = {
     u: 0
 }
 
-
 const origins = structuredClone(animatedProperties)
 
+const propValRelativeKey = {
+    x: animatedProperties.x - origins.y,
+    y: animatedProperties.x - origins.y,
+    r: animatedProperties.r - origins.r,
+    g: animatedProperties.g - origins.g,
+    b: animatedProperties.b - origins.b,
+    a: animatedProperties.a - origins.a,
+    t: animatedProperties.t - origins.t,
+    u: animatedProperties.u - origins.u,
+
+}
+const lastKeyValues = {
+    x: origins.y,
+    y: origins.y,
+    r: origins.r,
+    g: origins.g,
+    b: origins.b,
+    a: origins.a,
+    t: origins.t,
+    u: origins.u
+}
 const propOffsets = {
     x: animatedProperties.x - origins.y,
     y: animatedProperties.x - origins.y,
     r: animatedProperties.r - origins.r,
     g: animatedProperties.g - origins.g,
     b: animatedProperties.b - origins.b,
-    a: animatedProperties.a - origins.a
+    a: animatedProperties.a - origins.a,
+    t: animatedProperties.t - origins.t,
+    u: animatedProperties.u - origins.u
 }
 
 const lastVals = {}
@@ -47,8 +69,8 @@ const alphaBackground = {
 
 let visualizeColorOnBackground = true
 
-const keyframes = {
-    x: [[100, 10, 'linear']],//, [300, 50, 'expo1'], [0, 80, 'expo2']],
+let keyframes = {
+    x: [],//, [300, 50, 'expo1'], [0, 80, 'expo2']],
     y: [],
     r: [],
     g: [],
@@ -58,6 +80,16 @@ const keyframes = {
     u: [],
 
 }
+let keyframesRel = {
+    x: [],//, [300, 50, 'expo1'], [0, 80, 'expo2']],
+    y: [],
+    r: [],
+    g: [],
+    b: [],
+    a: [],
+    t: [],
+    u: [],
+}
 
 const interpTypes = ['linear', 'expo1', 'expo2', 'expo3']
 
@@ -66,6 +98,7 @@ let animationMode = 'absolute'
 const playback = {
     isRunning: false,
     holdLastVal: false,
+    frameRate: 60,
     frameNumber: 0
 }
 
@@ -100,50 +133,40 @@ function isParsedNum(string, mode) {
 }
 
 function updateElementsOnFrameSet() {
-    updateTextBoxes('allProps', 'frameNumber')
+    updateTextBoxes('allAbs', 'frameNumber')
+    updateTextBoxes('allRel')
     updateSliders()
 }
 
 function updateSliders() {
-    if (animationMode == 'absolute') {
-        // if (true) {
-        document.getElementById('r_slider').value = animatedProperties.r
-        document.getElementById('g_slider').value = animatedProperties.g
-        document.getElementById('b_slider').value = animatedProperties.b
-        document.getElementById('a_slider').value = animatedProperties.a
-    } else {
-        document.getElementById('r_slider').value = origins.r + propOffsets.r
-        document.getElementById('g_slider').value = origins.g + propOffsets.g
-        document.getElementById('b_slider').value = origins.b + propOffsets.b
-        document.getElementById('a_slider').value = origins.a + propOffsets.a
-    }
-
+    document.getElementById('r_slider').value = animatedProperties.r
+    document.getElementById('g_slider').value = animatedProperties.g
+    document.getElementById('b_slider').value = animatedProperties.b
+    document.getElementById('a_slider').value = animatedProperties.a
 }
 
 function updateTextBoxes(...props) {
-    if (props[0] === 'allProps') {
+    if (props[0] === 'allAbs') {
         for (let prop in animatedProperties) {
-            let value
-            if (animationMode == 'absolute') value = animatedProperties[prop]
-            else {
-                if (!playback.isRunning) {
-                    value = propOffsets[prop]
-                } else value = animatedProperties[prop] - origins[prop]
-            }
-            setTextBoxValue(textBoxes[prop], value)
+            setTextBoxValue(textBoxes[prop], animatedProperties[prop])
+            // propValRelativeKey[prop] = animatedProperties[prop] - lastKeyValues[prop]
+            // setTextBoxValue(textBoxes[prop + 'Rel'], propValRelativeKey[prop])
+        }
+        props.splice(0, 1)
+    }
+    if (props[0] === 'allRel') {
+        for (let prop in animatedProperties) {
+            // propValRelativeKey[prop] = animatedProperties[prop] - lastKeyValues[prop]
+            setTextBoxValue(textBoxes[prop + 'Rel'], propValRelativeKey[prop])
         }
         props.splice(0, 1)
     }
     for (let prop of props) {
-        let value
-        if (animationMode == 'absolute') value = animatedProperties[prop]
-        else {
-            if (!playback.isRunning) {
-                value = propOffsets[prop]
-            } else value = animatedProperties[prop] - origins[prop]
-        }
-        if (prop === 'frameNumber') value = frameNumber
-        setTextBoxValue(textBoxes[prop], value)
+        if (prop === 'frameNumber') {
+            setTextBoxValue(textBoxes[prop], frameNumber)
+        } else if (prop.slice(1) === 'Rel') {
+            setTextBoxValue(textBoxes[prop], propValRelativeKey[prop.charAt(0)])
+        } else setTextBoxValue(textBoxes[prop], animatedProperties[prop])
     }
 }
 
@@ -225,8 +248,9 @@ function createRGBASliderRow() {
         const element = document.getElementById(prop + '_slider')
         element.oninput = () => {
             animatedProperties[prop] = parseInt(element.value)
-            propOffsets[prop] = animatedProperties[prop] - origins[prop]
+            propValRelativeKey[prop] = animatedProperties[prop] - lastKeyValues[prop]
             updateTextBoxes(prop)
+            updateTextBoxes(prop + 'Rel')
         }
     }
 
@@ -458,9 +482,12 @@ function createUtilityRow() {
     exportButton.style('white-space', 'nowrap')
     exportButton.style('margin-right', '10px')
 
+    const saveButton = createButton('Save')
+    const loadButton = createFileInput(loadAnimation)
+    saveButton.mousePressed(saveAnimation)
 
 
-    parentElements(row, resizeCanvasSpan, rectModeSpan, exportButton)
+    parentElements(row, resizeCanvasSpan, rectModeSpan, saveButton, loadButton, exportButton)
     return row
 }
 
@@ -483,13 +510,38 @@ function createAniModeSpan() {
     return span
 }
 
+function createFrameRateInput() {
+    const span = createSpan()
+    const text = createSpan('Frame Rate')
+    const box = createInput()
+    textBoxes.fps = box
+    box.attribute('placeholder', 'FPS')
+    box.size(50)
+    box.id('fpsbox')
+
+    const handle = value => {
+        playback.frameRate = parseInt(value)
+    }
+
+    const validate = value => {
+        const val = parseInt(value)
+        return isParsedNum(value, 0) && val > 0 && val <= 60
+    }
+
+    textBoxSetup(box, validate, handle)
+
+    parentElements(span, text, box)
+    return span
+}
+
 function createUtilityRow2() {
     const row = createDiv()
     row.style('display', 'flex')
 
     const aniModeSpan = createAniModeSpan()
-    const frameSet = createFrameNumberInput()
     const colorVisualizer = createVizualizeColorSpan()
+    const setFps = createFrameRateInput()
+    const frameSet = createFrameNumberInput()
 
     aniModeSpan.style('flex', '2')
     aniModeSpan.style('text-align', 'left')
@@ -500,12 +552,16 @@ function createUtilityRow2() {
     colorVisualizer.style('text-align', 'center')
     colorVisualizer.style('white-space', 'nowrap')
 
+    setFps.style('flex', '2')
+    setFps.style('text-align', 'center')
+    setFps.style('white-space', 'nowrap')
+
     frameSet.style('flex', '2')
     frameSet.style('text-align', 'right')
     frameSet.style('white-space', 'nowrap')
     frameSet.style('margin-right', '10px')
 
-    parentElements(row, aniModeSpan, colorVisualizer, frameSet)
+    parentElements(row, aniModeSpan, colorVisualizer, setFps, frameSet)
     return row
 }
 
@@ -530,7 +586,7 @@ function getRadioSelection(group) {
     return radios[group].selected().value
 }
 
-function createPropTextBox(prop, size, x1) {
+function createPropTextBoxAbs(prop, size, x1) {
     const box = createInput()
     textBoxes[prop] = box
     box.value(animatedProperties[prop])
@@ -541,22 +597,51 @@ function createPropTextBox(prop, size, x1) {
 
 
     const hanldeValidValue = (value) => {
-        if (animationMode == 'absolute') animatedProperties[prop] = value
-        else {
-            propOffsets[prop] = value
-        }
-        if (prop == 'r' || prop == 'g' || prop == 'b' || prop == 'a') {
-            document.getElementById(prop + '_slider').value = value
-        }
+        animatedProperties[prop] = value
+        propValRelativeKey[prop] = value - lastKeyValues[prop]
+        updateTextBoxes(prop + 'Rel')
+        updateSliders()
     }
 
     const parseMode = prop === 't' || prop === 'u' ? 1 : 0
     let validation
     if (prop == 'r' || prop == 'g' || prop == 'b' || prop == 'a') {
         validation = (val) => {
-            const min = animationMode == 'absolute' ? 0 - origins[prop] : 0
-            const max = animationMode == 'absolute' ? 255 - origins[prop] : 255
-            return isParsedNum(val, parseMode) && val >= min && val <= max
+            return isParsedNum(val, parseMode) && val >= 0 && val <= 255
+        }
+    } else {
+        validation = (val) => {
+            return isParsedNum(val, parseMode)
+        }
+    }
+
+    textBoxSetup(box, validation, hanldeValidValue)
+
+    return box
+}
+
+function createPropTextBoxRel(prop, size, x1) {
+    const box = createInput()
+    textBoxes[prop + 'Rel'] = box
+    box.value(propValRelativeKey[prop])
+    box.attribute('placeholder', 'Δ' + prop)
+    box.position(x1)
+    box.size(...size)
+    box.id(prop + 'relBox')
+
+
+    const hanldeValidValue = (value) => {
+        propValRelativeKey[prop] = value
+        animatedProperties[prop] = value + lastKeyValues[prop]
+        updateTextBoxes(prop)
+        updateSliders()
+    }
+
+    const parseMode = prop === 't' || prop === 'u' ? 1 : 0
+    let validation
+    if (prop == 'r' || prop == 'g' || prop == 'b' || prop == 'a') {
+        validation = (val) => {
+            return isParsedNum(val, parseMode) && val >= 0 - lastKeyValues[prop] && val <= 255 - lastKeyValues[prop]
         }
     } else {
         validation = (val) => {
@@ -580,15 +665,15 @@ function createRenamePropOnExportTextBox(prop, x) {
 
 
 
-function createPropsSectionHeader(x1, x2, x3, x4, x5, x6, x7, x8, radioMargin) {
+function createPropsSectionHeader(x1, x2, x, x3, x4, x5, x6, x7, x8, radioMargin) {
     const row = createDiv()
     row.style('margin-bottom', '45px')
 
-    const s1 = animationMode === 'absolute' ? 'Absolute' : 'Relative'
-    const s2 = animationMode === 'absolute' ? 'Value' : 'Origin'
     const propName = createSpan('Prop')
-    const value1 = createSpan(s1)
-    const value2 = createSpan(s2)
+    const abs1 = createSpan('Absolute')
+    const abs2 = createSpan('Value')
+    const rel1 = createSpan('Relative')
+    const rel2 = createSpan('Last Keyframe')
     const originButton = createButton('Set Origins')
     const addKey1 = createSpan('Add/ Update')
     const addKey2 = createSpan('Keyframe')
@@ -604,9 +689,11 @@ function createPropsSectionHeader(x1, x2, x3, x4, x5, x6, x7, x8, radioMargin) {
     originButton.class('disableable')
     addAllButton.class('disableable')
     propName.position(x1)
-    value1.position(x2)
-    value2.position(x2, 20)
-    originButton.position(x3)
+    abs1.position(x2)
+    abs2.position(x2, 20)
+    rel1.position(x)
+    rel2.position(x, 20)
+    originButton.position(x3 - 10)
     interpType.position(x4)
     linear.position(x4, 25)
     expo1.position(x4 + radioMargin, 25)
@@ -618,9 +705,10 @@ function createPropsSectionHeader(x1, x2, x3, x4, x5, x6, x7, x8, radioMargin) {
     exportText.position(x7)
     rename.position(x8, 25)
 
-    value1.id('valueLine1')
-    value2.id('valueLine2')
+    abs1.id('valueLine1')
+    abs2.id('valueLine2')
 
+    originButton.size(60, 40)
     addAllButton.size(60)
     originButton.style('white-space', 'normal')
     originButton.mousePressed(setOrigins)
@@ -634,7 +722,7 @@ function createPropsSectionHeader(x1, x2, x3, x4, x5, x6, x7, x8, radioMargin) {
         }
     })
 
-    parentElements(row, propName, value1, value2, originButton, interpType, linear, addKey1, addKey2, expo1, expo2, expo3, addAllButton, exportText, rename)
+    parentElements(row, propName, abs1, abs2, rel1, rel2, originButton, interpType, linear, addKey1, addKey2, expo1, expo2, expo3, addAllButton, exportText, rename)
     return row
 }
 
@@ -691,19 +779,7 @@ function setOrigins() {
         const id = prop + '_originCheck'
         const element = document.getElementById(id)
         if (element.checked) {
-            const lastOrigin = origins[prop]
             origins[prop] = animatedProperties[prop]
-
-            if (animationMode == 'relative') {
-                for (let keyframe of keyframes[prop]) {
-                    if (prop == 'r' || prop == 'g' || prop == 'b' || prop == 'a') {
-                        const change = lastOrigin - origins[prop]
-                        keyframe[0] += change
-                    }
-                }
-                propOffsets[prop] = 0
-                updateTextBoxes(prop)
-            }
         }
     }
 }
@@ -729,7 +805,7 @@ function createPropEditorDiv() {
         '255, 200, 120',
         '255, 165, 190'
     ]
-    const x = [0, 46, 100, 125, 240, 340, 420, 670, 700]
+    const x = [65, 110, 185, 0, 300, 390, 470, 720, 750]
     const inputBoxSize = [30, 15]
     const radioMargin = 48
     const container = createDiv()
@@ -740,7 +816,7 @@ function createPropEditorDiv() {
         parentElements(container, rectangle)
     }
 
-    const rows = [createPropsSectionHeader(x[0], x[1], x[3], x[6], x[4], x[5], x[7], x[8], radioMargin)]
+    const rows = [createPropsSectionHeader(x[0], x[1], x[2], x[3], x[6], x[4], x[5], x[7], x[8], radioMargin)]
     for (let prop of propsOrder) {
         const row = createInterpRadio(prop)
         row.style('margin-top', '8px')
@@ -754,14 +830,16 @@ function createPropEditorDiv() {
         row.html('')
 
         const propName = createSpan(prop + ':')
-        const inputField = createPropTextBox(prop, inputBoxSize, x[1], x[2])
+        const absBox = createPropTextBoxAbs(prop, inputBoxSize, x[1])
+        const relBox = createPropTextBoxRel(prop, inputBoxSize, x[2])
         const originCheck = createSetOrigins(prop, x[3])
         const keyButtons = createKeyframeButtons(prop, x[4], x[5], row)
         const renamePropBox = createRenamePropOnExportTextBox(prop, x[8])
         const exportCheck = createExportCheck(prop, x[7])
 
+        propName.position(x[0], 0, 'relative')
 
-        parentElements(row, propName, inputField, keyButtons, renamePropBox)
+        parentElements(row, propName, absBox, relBox, keyButtons, renamePropBox)
 
         //add html radio tags back
         row.html(radioHTML, true)
@@ -814,6 +892,7 @@ function setup() {
     utilityRow.position(0, -165, 'relative')
     utilityRow2.position(0, -155, 'relative')
 
+
     // row_3.position(0, 20, 'relative')
     // row_4.position(0, 20, 'relative')
     // row_5.position(0, 20, 'relative')
@@ -823,8 +902,8 @@ function draw() {
     newAnimation?.animate()
 
     let x, y, r, g, b, a
-    if (animationMode === 'absolute' || playback.holdLastVal) {
-        // if (true) {
+    // if (animationMode === 'absolute' || playback.holdLastVal) {
+    if (true) {
         x = animatedProperties.x
         y = animatedProperties.y
         r = animatedProperties.r
@@ -858,10 +937,10 @@ function draw() {
     stroke(40, 200)
     line(x - 5, y, x + 5, y)
     line(x, y - 5, x, y + 5)
-    push()
-    fill(0)
-    text('absolute x: ' + x, 200, 350)
-    pop()
+    // push()
+    // fill(0)
+    // text('absolute x: ' + x, 200, 350)
+    // pop()
 }
 
 
@@ -899,9 +978,9 @@ function setCrosshairToMouse() {
         const newY = Math.round(mouseY)
         animatedProperties.x = newX
         animatedProperties.y = newY
-        propOffsets.x = animatedProperties.x - origins.x
-        propOffsets.y = animatedProperties.y - origins.y
-        updateTextBoxes('x', 'y')
+        propValRelativeKey.x = newX - lastKeyValues.x
+        propValRelativeKey.y = newY - lastKeyValues.y
+        updateTextBoxes('x', 'y', 'xRel', 'yRel')
     }
 }
 
@@ -915,9 +994,9 @@ function mouseDragged() {
             const newY = Math.round(mouseY) - clickYOffset
             animatedProperties.x = newX
             animatedProperties.y = newY
-            propOffsets.x = animatedProperties.x - origins.x
-            propOffsets.y = animatedProperties.y - origins.y
-            updateTextBoxes('x', 'y')
+            propValRelativeKey.x = newX - lastKeyValues.x
+            propValRelativeKey.y = newY - lastKeyValues.y
+            updateTextBoxes('x', 'y', 'xRel', 'yRel')
         }
     }
 }
@@ -1005,11 +1084,11 @@ const timelineInstance = (timeline) => {
         } else pageChangeAniRunning = false
     }
 
-    timeline.addKeyframeHandle = (prop, keyframe) => {
+    timeline.addKeyframeHandle = (prop, keyframe, relKey) => {
         let rowHeight = timeline.height / propsOrder.length
         let y = rowHeight * propsOrder.indexOf(prop) + rowHeight / 2
         let x = timeline.frameNumToXCoord(keyframe[1])
-        keyframeHandles.push(new KeyframeHandle(keyframe, x, y, prop))
+        keyframeHandles.push(new KeyframeHandle(keyframe, x, y, prop, relKey))
     }
 
     timeline.deleteKeyframeHandle = (keyframe, prop) => {
@@ -1023,9 +1102,18 @@ const timelineInstance = (timeline) => {
         keyframeHandles = []
     }
 
+    timeline.createHandlesFromKeyframes = () => {
+        for (let prop in keyframes) {
+            for (let i = 0; i < keyframes[prop].length; i++) {
+                timeline.addKeyframeHandle(prop, keyframes[prop][i], keyframesRel[prop][i])
+            }
+        }
+    }
+
     class KeyframeHandle {
-        constructor(keyframe, x, y, prop) {
+        constructor(keyframe, x, y, prop, relKey) {
             this.keyframe = keyframe
+            this.keyframeRel = relKey
             this.x = x
             this.y = y
             this.d = 9
@@ -1052,16 +1140,17 @@ const timelineInstance = (timeline) => {
             let existingHandleIndex = findKeyIndexAtFrame(newFrame, this.prop)
             let thisHandleCurrentIndex = findKeyIndexAtFrame(this.keyframe[1], this.prop)
             if (existingHandleIndex !== -1 && existingHandleIndex !== thisHandleCurrentIndex) deleteKeyframe(keyframeHandles[existingHandleIndex].keyframe, this.prop)
-            console.log('-- > KeyframeHandle > existingHandleIndex', existingHandleIndex)
+            // console.log('-- > KeyframeHandle > existingHandleIndex', existingHandleIndex)
 
             this.keyframe[1] = newFrame
+            this.keyframeRel[1] = newFrame
             // this.keyframe[1] = this.keyframe[1]
             let nearestID = findKeyIndexForFrame(this.keyframe[1], this.prop)
             reorderKeyframes(this.prop, thisHandleCurrentIndex, nearestID)
             // console.log('frame: ' + this.keyframe[1])
             // console.log('new: ' + nearestID)
             // updateKeyframe(this.keyframeIndex, this.prop, undefined, this.keyframe[1])
-            console.log(keyframes[this.prop])
+            // console.log(keyframes[this.prop])
             this.previousPage = this.page
         }
 
@@ -1115,12 +1204,12 @@ const timelineInstance = (timeline) => {
     timeline.mouseReleased = () => {
         if (clickedKeyframeHandle) {
             clickedKeyframeHandle.updateAfterDrag()
-            console.log('-- > clickedKeyframeHandle', clickedKeyframeHandle)
+            // console.log('-- > clickedKeyframeHandle', clickedKeyframeHandle)
             clickedKeyframeHandle.isHeld = false
             clickedKeyframeHandle.highlight = false
             clickedKeyframeHandle = undefined
         }
-        console.log(findKeyIndexForFrame(frameNumber, 'x'))
+        // console.log(findKeyIndexForFrame(frameNumber, 'x'))
 
         dragLeftTimeline = false
         mouseAboveUpper = false
@@ -1130,6 +1219,7 @@ const timelineInstance = (timeline) => {
     timeline.mouseDragged = () => {
         if (!playback.isRunning) {
             if (clickInitiatedInTimeline) {
+
                 timeline.setFrameFromMouse()
                 if (!mouseAboveUpper) {
                     if (timeline.mouseX > timeline.width) {
@@ -1163,6 +1253,9 @@ const timelineInstance = (timeline) => {
                 clickedKeyframeHandle.move(newX)
                 clickedKeyframeHandle.isHeld = true
                 animatedProperties[clickedKeyframeHandle.prop] = clickedKeyframeHandle.keyframe[0]
+                updateTextBoxes(clickedKeyframeHandle.prop)
+                updateSliders()
+
             }
         }
     }
@@ -1213,7 +1306,7 @@ const timelineInstance = (timeline) => {
             }
             if (keyCode === 73) {
                 clickedKeyframeHandle.highlight = false
-                changeInterp(clickedKeyframeHandle.keyframe, 'next')
+                changeInterp(clickedKeyframeHandle.keyframe, clickedKeyframeHandle.keyframeRel, 'next')
             }
         }
     }
@@ -1265,11 +1358,7 @@ const timelineInstance = (timeline) => {
         deleteAllHandlesTHook = timeline.deleteAllHandles
         addKeyframeTHook = timeline.addKeyframeHandle
         pageChangeListenerTHook = timeline.pageChangeListener
-        for (let prop in keyframes) {
-            for (let i = 0; i < keyframes[prop].length; i++) {
-                timeline.addKeyframeHandle(prop, keyframes[prop][i])
-            }
-        }
+        loadAnimationTHook = timeline.createHandlesFromKeyframes
     }
 
 
@@ -1415,7 +1504,9 @@ const timelineInstance = (timeline) => {
                 timeline.textAlign(timeline.RIGHT)
                 x = isOverHandle.x - offset
             }
-            timeline.text(isOverHandle.keyframe[0], x, isOverHandle.y + 8)
+            timeline.textSize(9)
+            timeline.text(isOverHandle.keyframe[0], x, isOverHandle.y - 2)
+            timeline.text(isOverHandle.keyframeRel[0] + ' Δ', x, isOverHandle.y + 8)
             timeline.pop()
         }
     }
@@ -1434,25 +1525,22 @@ function isInCanvas(x, y, elt) {
 
 function setFrameNumber(f) {
     frameNumber = f
-
     if (!playback.isRunning) {
+        let k = ['x']
         //update displayed properties to neearest keyframe
-        for (let prop in keyframes) {
-            animatedProperties[prop] = origins[prop]
-            propOffsets[prop] = 0
-            if (keyframes[prop].length) {
-                for (let i = keyframes[prop].length - 1; i >= 0; i--) {
-                    //set value to last keyframe
-                    if (f >= keyframes[prop][i][1]) {
-                        let val = keyframes[prop][i][0]
-                        if (animationMode == 'relative') {
-                            propOffsets[prop] = val
-                            animatedProperties[prop] = val
-                        } else animatedProperties[prop] = val
-                        break
-                    }
-                }
-            }
+        for (let prop of propsOrder) {
+            const propKeys = [[origins[prop], 0]].concat(keyframes[prop])
+            const closestKeyI = propKeys.findIndex((key, i, keys) => {
+                return i === propKeys.length - 1 || (f >= key[1] && f < keys[i + 1][1])
+            })
+
+            const closestKey = propKeys[closestKeyI]
+            const newAbs = closestKey[0]
+            // propValRelativeKey[prop] = 0
+
+            lastKeyValues[prop] = closestKey[1] === f ? propKeys[closestKeyI - 1][0] : newAbs
+            animatedProperties[prop] = newAbs
+            propValRelativeKey[prop] = animatedProperties[prop] - lastKeyValues[prop]
         }
     }
     updateElementsOnFrameSet()
@@ -1466,22 +1554,25 @@ function updateKeyframeTHook() {
 
 function captureKeyframe(prop) {
     // console.log(textBoxes[prop])
-    const value = parseInt(textBoxes[prop].value())
-    if (isNaN(value)) return console.log('Could not add keyframe for property ' + prop)
+    const absVal = parseFloat(textBoxes[prop].value())
+    const relVal = parseFloat(textBoxes[prop + 'Rel'].value())
+    if (isNaN(absVal) || isNaN(relVal)) return console.log('Could not add keyframe for property ' + prop)
     const frame = frameNumber
     const interp = getRadioSelection(prop)
-    setKeyframe(prop, value, frame, interp)
+    setKeyframe(prop, absVal, frame, interp, relVal)
 }
 
-function setKeyframe(prop, value, frame, interp) {
-    const keyframe = [value, frame, interp]
+function setKeyframe(prop, absValue, frame, interp, relValue) {
+    const keyframeAbs = [absValue, frame, interp]
+    const keyframeRel = [relValue, frame, interp]
     const i = findKeyIndexForFrame(frame, prop)
     const keyIndexAtFrame = findKeyIndexAtFrame(frame, prop)
     if (keyIndexAtFrame > -1) {
-        updateKeyframe(keyIndexAtFrame, prop, value, interp)
+        updateKeyframe(keyIndexAtFrame, prop, absValue, interp, relValue)
     } else {
-        keyframes[prop].splice(i, 0, keyframe)
-        addKeyframeTHook(prop, keyframe)
+        keyframes[prop].splice(i, 0, keyframeAbs)
+        keyframesRel[prop].splice(i, 0, keyframeRel)
+        addKeyframeTHook(prop, keyframeAbs, keyframeRel)
     }
 }
 
@@ -1504,15 +1595,24 @@ function findKeyIndexAtFrame(frame, prop) {
     return -1
 }
 
-function updateKeyframe(keyframeIndex, prop, value, interp) {
-    if (value !== undefined) keyframes[prop][keyframeIndex][0] = value
-    if (interp !== undefined) keyframes[prop][keyframeIndex][2] = interp
-    // updateKeyframeTHook(keyframeIndex, prop, value, interp)
+function updateKeyframe(keyframeIndex, prop, value, interp, relVal) {
+    if (value !== undefined) {
+        keyframes[prop][keyframeIndex][0] = value
+        keyframesRel[prop][keyframeIndex][0] = relVal
+    }
+    if (interp !== undefined) {
+        keyframes[prop][keyframeIndex][2] = interp
+        keyframesRel[prop][keyframeIndex][2] = interp
+    }
 }
 
 function reorderKeyframes(prop, startID, newID) {
     if (startID < newID) newID--
-    if (startID !== newID) keyframes[prop].splice(newID, 0, keyframes[prop].splice(startID, 1)[0])
+    if (startID !== newID) {
+        keyframes[prop].splice(newID, 0, keyframes[prop].splice(startID, 1)[0])
+        keyframesRel[prop].splice(newID, 0, keyframesRel[prop].splice(startID, 1)[0])
+    }
+    updateRelativeKeyframes(prop)
 }
 
 function deleteKeyframeHandleTHook() {
@@ -1525,13 +1625,11 @@ function deleteAllHandlesTHook() {
 function deleteKeyframe(keyframe, prop) {
     deleteKeyframeHandleTHook(keyframe, prop)
     let i = keyframes[prop].indexOf(keyframe)
-    console.log(i)
-    console.log(keyframes[prop][i])
     keyframes[prop].splice(i, 1)
-    console.log(keyframes[prop])
+    keyframesRel[prop].splice(i, 1)
 }
 
-function changeInterp(keyframe, type) {
+function changeInterp(keyframe, relKey, type) {
     let i
     if (type === 'next') {
         i = (interpTypes.indexOf(keyframe[2]) + 1) % interpTypes.length
@@ -1539,6 +1637,7 @@ function changeInterp(keyframe, type) {
         i = (interpTypes.indexOf(keyframe[2]) || interpTypes.length) - 1
     } else i = interpTypes.indexOf(type)
     keyframe[2] = interpTypes[i]
+    relKey[2] = interpTypes[i]
 }
 
 function exportKeyframes() {
@@ -1547,16 +1646,66 @@ function exportKeyframes() {
         if (!document.getElementById(prop + '_exportCheck').checked) continue
         const renameString = textBoxes[prop + '_rename'].value()
         const newProp = renameString.length > 0 ? renameString : prop
-        keys[newProp] = keyframes[prop]
+        keys[newProp] = animationMode === 'absolute' ? keyframes[prop] : keyframesRel[prop]
     }
-    const a = document.createElement("a");
-    const url = URL.createObjectURL(new Blob([JSON.stringify(keys, null, 4)], { type: "application/json" }));
-    a.href = url
-    a.setAttribute("download", "keyframes.json");
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+    const blob = new Blob([JSON.stringify(keys, null, 4)], { type: "application/json" })
+    saveAs(blob, 'export')
+    // const a = document.createElement("a");
+    // const url = URL.createObjectURL(blob);
+    // a.href = url
+    // a.setAttribute("download", "keyframes.json");
+    // document.body.appendChild(a);
+    // a.click();
+    // window.URL.revokeObjectURL(url);
+    // document.body.removeChild(a);
+}
+
+
+function saveAnimation() {
+    const saveData = {
+        absolute: keyframes,
+        relative: keyframesRel
+    }
+    const blob = new Blob([JSON.stringify(saveData, null, 4)], { type: "application/json" })
+    saveAs(blob, 'export')
+}
+
+async function saveAs(blob, type) {
+
+    const fileType = {
+        export: {
+            types: [{
+                description: "JSON",
+                accept: { "application/json": [".json"] }
+            }]
+        },
+        saveData: {
+            types: [{
+                description: "Animation Editor Save File",
+                accept: { "application/json": [".aniSav"] }
+            }]
+        }
+    }
+    const fileHandle = await window.showSaveFilePicker(fileType[type]);
+
+    const fileStream = await fileHandle.createWritable();
+    await fileStream.write(blob);
+    await fileStream.close();
+}
+
+function loadAnimation(save_file) {
+    console.log(save_file)
+    keyframes = save_file.data.absolute
+    keyframesRel = save_file.data.relative
+    loadAnimationTHook()
+}
+
+function loadAnimationTHook() {
+
+}
+
+function pageChangeListenerTHook() {
+
 }
 
 function test() {
@@ -1578,6 +1727,7 @@ function startPlayback() {
     }
     newAnimation = new Animation(animatedProperties, frameObj, animationMode === 'absolute' ? 'abs' : false)
 
+    frameRate(playback.frameRate)
     newAnimation.startAt(origins)
     newAnimation.play().then(stopPlayback)
     playback.isRunning = true
@@ -1588,6 +1738,7 @@ function stopPlayback() {
     if (playback.isRunning) newAnimation.cancel()
     playback.isRunning = false
     playback.frameNumber = 0
+    frameRate(60)
     enableInputs()
 }
 
@@ -1603,45 +1754,13 @@ function enableInputs() {
 }
 
 function disableInputs() {
-
     document.querySelectorAll('.disableable').forEach((element) => {
         element.disabled = true
     })
 }
 
 function toggleAnimationMode() {
-    if (animationMode == 'absolute') {
-        animationMode = 'relative'
-        // animatedProperties.x = 0
-        // animatedProperties.y = 0
-        // updateTextBoxes('x', 'y')
-        // animatedProperties.r = origins.r
-        // animatedProperties.g = origins.g
-        // animatedProperties.b = origins.b
-        // animatedProperties.a = origins.a
-        for (let prop of propsOrder) {
-            textBoxes[prop].value(0)
-        }
-
-    } else {
-        animationMode = 'absolute'
-        // animatedProperties.x = origins.x
-        // animatedProperties.y = origins.y
-        // updateTextBoxes('x', 'y')
-        // animatedProperties.r = origins.r
-        // animatedProperties.g = origins.g
-        // animatedProperties.b = origins.b
-        // animatedProperties.a = origins.a
-        for (let prop of propsOrder) {
-            textBoxes[prop].value(origins[prop])
-        }
-    }
-    // animationMode = animationMode === 'relative' ? 'absolute' : 'relative'
-    document.getElementById('valueLine1').innerHTML = animationMode === 'absolute' ? 'Absolute' : 'Relative'
-    document.getElementById('valueLine2').innerHTML = animationMode === 'absolute' ? 'Value' : 'Origin'
-    // updateTextBoxes('x', 'y', 'r', 'g', 'b', 'a')
-    // updateElementsOnFrameSet()
-
+    animationMode = animationMode === 'absolute' ? 'relative' : 'absolute'
     deleteAllKeyframes()
 }
 
@@ -1649,5 +1768,18 @@ function deleteAllKeyframes() {
     deleteAllHandlesTHook()
     for (let prop in keyframes) {
         keyframes[prop] = []
+        keyframesRel[prop] = []
+    }
+}
+
+function updateRelativeKeyframes(prop) {
+    const keys = keyframes[prop]
+    console.log('-- > keys', keys)
+
+    let lastAbs = origins[prop]
+    for (let i = 0; i < keys.length; i++) {
+        keyframesRel[prop][i][0] = keys[i][0] - lastAbs
+        lastAbs = keys[i][0]
+
     }
 }
