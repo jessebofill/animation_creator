@@ -1,4 +1,4 @@
-
+const versionNumber = '23.1.11'
 
 const canvas = {
     width: 400,
@@ -66,6 +66,8 @@ const alphaBackground = {
     g: 100,
     b: 100,
 }
+
+let tempKeysForHeldHandle = []
 
 let visualizeColorOnBackground = true
 
@@ -347,27 +349,34 @@ function createFrameNumberInput() {
     return span
 }
 
+function createExportButton(){
+    const exportButton = createButton('Export Keyframes')
+    exportButton.class('disableable')
+    exportButton.mousePressed(exportKeyframes)
+    return exportButton
+}
+
 function createSaveLoadExport() {
     const span = createSpan()
 
     const saveButton = createButton('Save')
-    const loadButton = createInput()
+    const loadButton = createButton('Load')
+    const hiddenLoad = document.createElement('input')
+    hiddenLoad.setAttribute('type', 'file')
+    hiddenLoad.onchange = () => loadAnimation(hiddenLoad)
     saveButton.class('disableable')
-    loadButton.class('disableable')
-    loadButton.attribute('type', 'file')
-    loadButton.changed(loadAnimation2)
+    // hiddenLoad.class('disableable')
+    // hiddenLoad.attribute('type', 'file')
+    // hiddenLoad.changed(loadAnimation2)
     // const loadButton = createFileInput(loadAnimation)
     saveButton.mousePressed(saveAnimation)
+    loadButton.mousePressed(() => hiddenLoad.click())
 
     saveButton.style('margin-right', '10px')
     // loadButton.style('margin-right', '25px')
 
-    const exportButton = createButton('Export Keyframes')
-    exportButton.style('margin-right', '20px')
-    exportButton.class('disableable')
-    exportButton.mousePressed(exportKeyframes)
 
-    parentElements(span, saveButton, loadButton, exportButton)
+    parentElements(span, saveButton, loadButton)
     return span
 }
 
@@ -475,7 +484,7 @@ function createResizeCanvasSpan() {
     return span
 }
 
-function createSaveLoadExportSpan(){
+function createSaveLoadExportSpan() {
     const span = createSpan()
     const saveButton = createButton('Save')
     const loadButton = createInput()
@@ -525,8 +534,8 @@ function createUtilityRow() {
 function createAniModeSpan() {
     const span = createSpan()
 
-    const aniModeText1 = createSpan('Animation Mode:')
-    aniModeText1.id('aniMode_span')
+    // const aniModeText1 = createSpan('Animation Mode:')
+    span.id('aniMode_span')
 
     const aniModeRadio = createRadio('aniModeRadio')
     aniModeRadio.hide()
@@ -534,12 +543,12 @@ function createAniModeSpan() {
     aniModeRadio.option('absolute', 'absolute')
     aniModeRadio.option('relative', 'relative')
     aniModeRadio.selected(animationMode)
-    aniModeText1.html(aniModeRadio.html(), true)
+    span.html(aniModeRadio.html(), true)
 
     document.getElementById('aniMode_span').onchange = toggleAnimationMode
 
 
-    parentElements(span, aniModeText1)
+    // parentElements(span, aniModeText1)
     return span
 }
 
@@ -572,18 +581,12 @@ function createFrameRateInput() {
 function createUtilityRow2() {
     const row = createDiv()
     row.style('display', 'flex')
-
-    const aniModeSpan = createAniModeSpan()
     const colorVisualizer = createVizualizeColorSpan()
     const frameSet = createFrameNumberInput()
 
-    aniModeSpan.style('flex', '2')
-    aniModeSpan.style('text-align', 'left')
-    aniModeSpan.style('white-space', 'nowrap')
-    aniModeSpan.style('margin-left', '10px')
-
     colorVisualizer.style('flex', '6')
-    colorVisualizer.style('text-align', 'center')
+    colorVisualizer.style('text-align', 'left')
+    colorVisualizer.style('margin-left', '10px')
     colorVisualizer.style('white-space', 'nowrap')
 
     frameSet.style('flex', '2')
@@ -591,7 +594,7 @@ function createUtilityRow2() {
     frameSet.style('white-space', 'nowrap')
     frameSet.style('margin-right', '10px')
 
-    parentElements(row, aniModeSpan, colorVisualizer, frameSet)
+    parentElements(row, colorVisualizer, frameSet)
     return row
 }
 
@@ -695,7 +698,7 @@ function createRenamePropOnExportTextBox(prop, x) {
 
 
 
-function createPropsSectionHeader(x1, x2, x, x3, x4, x5, x6, x7, x8, radioMargin) {
+function createPropsSectionHeader(x1, x2, x, x3, x4, x5, x6, x7, x8, x9, radioMargin) {
     const row = createDiv()
     row.style('margin-bottom', '45px')
 
@@ -715,6 +718,8 @@ function createPropsSectionHeader(x1, x2, x, x3, x4, x5, x6, x7, x8, radioMargin
     const addAllButton = createButton('Key All')
     const exportText = createSpan('Export')
     const rename = createSpan('Export As')
+    // const aniMode = createAniModeSpan()
+    const invert = createSpan('Invert Relative')
 
     originButton.class('disableable')
     addAllButton.class('disableable')
@@ -734,6 +739,8 @@ function createPropsSectionHeader(x1, x2, x, x3, x4, x5, x6, x7, x8, radioMargin
     addAllButton.position(x6)
     exportText.position(x7)
     rename.position(x8, 25)
+    invert.position(x9, 25)
+    // aniMode.position(x9)
 
     abs1.id('valueLine1')
     abs2.id('valueLine2')
@@ -752,7 +759,7 @@ function createPropsSectionHeader(x1, x2, x, x3, x4, x5, x6, x7, x8, radioMargin
         }
     })
 
-    parentElements(row, propName, abs1, abs2, rel1, rel2, originButton, interpType, linear, addKey1, addKey2, expo1, expo2, expo3, addAllButton, exportText, rename)
+    parentElements(row, propName, abs1, abs2, rel1, rel2, originButton, interpType, linear, addKey1, addKey2, expo1, expo2, expo3, addAllButton, exportText, rename, invert)
     return row
 }
 
@@ -810,8 +817,10 @@ function setOrigins() {
         const element = document.getElementById(id)
         if (element.checked) {
             origins[prop] = animatedProperties[prop]
+            updateRelativeKeyframes(prop)
         }
     }
+    setFrameNumber(0)
 }
 
 function createSetOrigins(prop, x) {
@@ -828,6 +837,12 @@ function createExportCheck(prop, x) {
     return checkHtml
 }
 
+function createInvertRelCheck(prop, x) {
+    const id = prop + '_invertRelCheck'
+    const checkHtml = '<label><input type="checkbox" id="' + id + '" style="position: absolute; left: ' + x + 'px;"></label>'
+    return checkHtml
+}
+
 function createPropEditorDiv() {
     const interpColors = [
         '165, 235, 225',
@@ -835,7 +850,7 @@ function createPropEditorDiv() {
         '255, 200, 120',
         '255, 165, 190'
     ]
-    const x = [65, 110, 185, 0, 300, 390, 470, 720, 750]
+    const x = [65, 110, 185, 0, 300, 390, 470, 700, 740, 830]
     const inputBoxSize = [30, 15]
     const radioMargin = 48
     const container = createDiv()
@@ -846,7 +861,7 @@ function createPropEditorDiv() {
         parentElements(container, rectangle)
     }
 
-    const rows = [createPropsSectionHeader(x[0], x[1], x[2], x[3], x[6], x[4], x[5], x[7], x[8], radioMargin)]
+    const rows = [createPropsSectionHeader(x[0], x[1], x[2], x[3], x[6], x[4], x[5], x[7], x[8], x[9], radioMargin)]
     for (let prop of propsOrder) {
         const row = createInterpRadio(prop)
         row.style('margin-top', '8px')
@@ -866,6 +881,7 @@ function createPropEditorDiv() {
         const keyButtons = createKeyframeButtons(prop, x[4], x[5], row)
         const renamePropBox = createRenamePropOnExportTextBox(prop, x[8])
         const exportCheck = createExportCheck(prop, x[7])
+        const invertRelCheck = createInvertRelCheck(prop, x[9])
 
         propName.position(x[0], 0, 'relative')
 
@@ -875,6 +891,7 @@ function createPropEditorDiv() {
         row.html(radioHTML, true)
         row.html(originCheck, true)
         row.html(exportCheck, true)
+        row.html(invertRelCheck, true)
 
         rows.push(row)
     }
@@ -984,11 +1001,6 @@ function keyPressed() {
 function mousePressed() {
     if (!playback.isRunning) {
         clickInitiatedInMainCanvas = isInCanvas(mouseX, mouseY, mainCanvas) ? true : false
-
-        if (animationMode == 'relative') {
-            animatedProperties.x = propOffsets.x + origins.x
-            animatedProperties.y = propOffsets.y + origins.y
-        }
         clickXOffset = Math.round(mouseX) - animatedProperties.x
         clickYOffset = Math.round(mouseY) - animatedProperties.y
     }
@@ -1132,7 +1144,8 @@ const timelineInstance = (timeline) => {
         keyframeHandles = []
     }
 
-    timeline.createHandlesFromKeyframes = () => {
+    timeline.loadKeyframes = () => {
+        timeline.deleteAllHandles()
         for (let prop in keyframes) {
             for (let i = 0; i < keyframes[prop].length; i++) {
                 timeline.addKeyframeHandle(prop, keyframes[prop][i], keyframesRel[prop][i])
@@ -1224,7 +1237,12 @@ const timelineInstance = (timeline) => {
     timeline.mousePressed = () => {
         if (!playback.isRunning) {
             clickedKeyframeHandle = timeline.isInsideHandle(timeline.mouseX, timeline.mouseY)
-            if (clickedKeyframeHandle) clickedKeyframeHandle.highlight = true
+            if (clickedKeyframeHandle) {
+                clickedKeyframeHandle.highlight = true
+                tempKeysForHeldHandle = [[origins[clickedKeyframeHandle.prop], 0]].concat(keyframes[clickedKeyframeHandle.prop])
+                const clickedKeyI = tempKeysForHeldHandle.findIndex(key => key === clickedKeyframeHandle.keyframe)
+                tempKeysForHeldHandle.splice(clickedKeyI, 1)
+            }
             clickInitiatedInTimeline = timeline.isInTimeline(timeline.mouseX, timeline.mouseY) || clickedKeyframeHandle ? true : false
             if (clickInitiatedInTimeline) timeline.setFrameFromMouse()
         }
@@ -1355,17 +1373,35 @@ const timelineInstance = (timeline) => {
 
     timeline.createRescaleSlider = (startVal) => {
         const row = createDiv()
+        row.style('display', 'flex')
+        row.style('white-space', 'nowrap')
+        row.position(0, 80, 'relative')
+
+        const sliderSpan = createSpan()
         const slider = createSlider(980, 1880, startVal, 60)
         const text = createSpan('Resize Timeline')
-        parentElements(row, text, slider)
+        parentElements(sliderSpan, text, slider)
 
         slider.class('disableable')
-        row.style('white-space', 'nowrap')
         text.style('margin-right', '10px')
 
         slider.id('rescaleTSlider')
         slider.size(500)
-        row.position(10, 80, 'relative')
+
+        const ver = createSpan(`Animation Maker: ver. ${versionNumber}`)
+
+
+
+        sliderSpan.style('text-align', 'left')
+        sliderSpan.style('flex', '7')
+        sliderSpan.style('margin-left', '10px')
+        // sliderSpan.style('white-space', 'nowrap')
+    
+        ver.style('text-align', 'right')
+        ver.style('flex', '3')
+        // ver.style('white-space', 'nowrap')
+        ver.style('margin-right', '25px')
+        parentElements(row, sliderSpan, ver)
         // slider.position(115, -18, 'relative')
         document.getElementById('rescaleTSlider').oninput = () => timeline.rescale(slider.value())
     }
@@ -1388,7 +1424,7 @@ const timelineInstance = (timeline) => {
         deleteAllHandlesTHook = timeline.deleteAllHandles
         addKeyframeTHook = timeline.addKeyframeHandle
         pageChangeListenerTHook = timeline.pageChangeListener
-        loadAnimationTHook = timeline.createHandlesFromKeyframes
+        loadAnimationTHook = timeline.loadKeyframes
     }
 
 
@@ -1427,7 +1463,7 @@ const timelineInstance = (timeline) => {
 
         if (timeline.isInTimeline(timeline.mouseX, timeline.mouseY)) {
             playback.holdLastVal = false
-            setFrameNumber(timeline.xCoordToClosestFrameNum(timeline.mouseX))
+            setFrameNumber(timeline.xCoordToClosestFrameNum(timeline.mouseX), clickedKeyframeHandle)
         }
     }
 
@@ -1553,24 +1589,46 @@ function isInCanvas(x, y, elt) {
     return (x >= 0 && x < w && y >= 0 && y < h)
 }
 
-function setFrameNumber(f) {
+function setFrameNumber(f, heldHandle) {
     frameNumber = f
     if (!playback.isRunning) {
         let k = ['x']
         //update displayed properties to neearest keyframe
         for (let prop of propsOrder) {
-            const propKeys = [[origins[prop], 0]].concat(keyframes[prop])
-            const closestKeyI = propKeys.findIndex((key, i, keys) => {
-                return i === propKeys.length - 1 || (f >= key[1] && f < keys[i + 1][1])
-            })
+            let propKeys
+            let closestKeyI
+            let closestKey
+            let prevKey
+            if (heldHandle && heldHandle.prop === prop) {
+                propKeys = tempKeysForHeldHandle
+                closestKeyI = propKeys.findIndex((key, i, keys) => {
+                    return i === propKeys.length - 1 || (f > key[1] && f <= keys[i + 1][1])
+                })
+                closestKey = propKeys[closestKeyI]
+                lastKeyValues[prop] = closestKey[0]
+                animatedProperties[prop] = heldHandle.keyframe[0]
+            } else {
+                propKeys = [[origins[prop], 0]].concat(keyframes[prop])
+                closestKeyI = propKeys.findIndex((key, i, keys) => {
+                    return i === propKeys.length - 1 || (f >= key[1] && f < keys[i + 1][1])
+                })
+                closestKey = propKeys[closestKeyI]
+                prevKey = propKeys[closestKeyI - 1] ?? propKeys[0]
+                lastKeyValues[prop] = closestKey[1] === f ? prevKey[0] : closestKey[0]
+                animatedProperties[prop] = closestKey[0]
+            }
+            propValRelativeKey[prop] = animatedProperties[prop] - lastKeyValues[prop]
 
-            const closestKey = propKeys[closestKeyI]
-            const newAbs = closestKey[0]
+            // const closestKey = propKeys[closestKeyI]
+            // if (prop === 'x') console.log('-- > closestKey', closestKey)
+
+            // const newAbs = heldHandle && heldHandle.prop === prop ? heldHandle.keyframe[0] : closestKey[0]
             // propValRelativeKey[prop] = 0
 
-            lastKeyValues[prop] = closestKey[1] === f ? propKeys[closestKeyI - 1][0] : newAbs
-            animatedProperties[prop] = newAbs
-            propValRelativeKey[prop] = animatedProperties[prop] - lastKeyValues[prop]
+            // lastKeyValues[prop] = closestKey[1] === f ? prevKey[0] : newAbs
+            // animatedProperties[prop] = newAbs
+            // propValRelativeKey[prop] = animatedProperties[prop] - lastKeyValues[prop]
+
         }
     }
     updateElementsOnFrameSet()
@@ -1604,6 +1662,7 @@ function setKeyframe(prop, absValue, frame, interp, relValue) {
         keyframesRel[prop].splice(i, 0, keyframeRel)
         addKeyframeTHook(prop, keyframeAbs, keyframeRel)
     }
+    updateRelativeKeyframes(prop)
 }
 
 function findKeyIndexForFrame(frame, prop) {
@@ -1729,14 +1788,8 @@ async function saveAs(blob, type) {
     await fileStream.close();
 }
 
-function loadAnimation(save_file) {
-    console.log(save_file)
-    keyframes = save_file.data.absolute
-    keyframesRel = save_file.data.relative
-    loadAnimationTHook()
-}
-function loadAnimation2(save_file) {
 
+function loadAnimation2(save_file) {
     const file = save_file.target.files[0];
 
     // setting up the reader
@@ -1761,8 +1814,42 @@ function loadAnimation2(save_file) {
         vCheck.checked = boundingBox.show
 
         const i = animationMode === 'absolute' ? 0 : 1
-        document.getElementById('aniMode_span').children[i].children[0].checked = true
-        document.getElementById('color_swatch').style.backgroundColor =`rgb(${alphaBackground.r},${alphaBackground.g},${alphaBackground.b})`
+        // document.getElementById('aniMode_span').children[i].children[0].checked = true
+        document.getElementById('color_swatch').style.backgroundColor = `rgb(${alphaBackground.r},${alphaBackground.g},${alphaBackground.b})`
+
+        loadAnimationTHook()
+        setFrameNumber(1)
+    }
+}
+
+function loadAnimation(save_file) {
+
+    const file = save_file.files[0];
+
+    // setting up the reader
+    var reader = new FileReader();
+    reader.readAsText(file, 'UTF-8');
+
+    // here we tell the reader what to do when it's done reading...
+    reader.onload = readerEvent => {
+        const parsedObj = JSON.parse(readerEvent.target.result)
+        console.log('-- > parsedObj', parsedObj)
+
+        keyframes = parsedObj.absolute
+        keyframesRel = parsedObj.relative
+        animationMode = parsedObj.aniMode
+        visualizeColorOnBackground = parsedObj.colorMode
+        Object.assign(canvas, parsedObj.canvas)
+        Object.assign(origins, parsedObj.origins)
+        Object.assign(boundingBox, parsedObj.box)
+        Object.assign(alphaBackground, parsedObj.aBG)
+
+        const vCheck = document.getElementById('showHitBox_check').firstElementChild.firstElementChild
+        vCheck.checked = boundingBox.show
+
+        const i = animationMode === 'absolute' ? 0 : 1
+        // document.getElementById('aniMode_span').children[i].children[0].checked = true
+        document.getElementById('color_swatch').style.backgroundColor = `rgb(${alphaBackground.r},${alphaBackground.g},${alphaBackground.b})`
 
         loadAnimationTHook()
         setFrameNumber(1)
@@ -1796,7 +1883,7 @@ function startPlayback() {
         if (keyframes[prop].length > 0)
             frameObj[prop] = keyframes[prop]
     }
-    newAnimation = new Animation(animatedProperties, frameObj, animationMode === 'absolute' ? 'abs' : false)
+    newAnimation = new Animation(animatedProperties, frameObj, 'abs')
 
     frameRate(playback.frameRate)
     newAnimation.startAt(origins)
@@ -1845,12 +1932,10 @@ function deleteAllKeyframes() {
 
 function updateRelativeKeyframes(prop) {
     const keys = keyframes[prop]
-    console.log('-- > keys', keys)
 
     let lastAbs = origins[prop]
     for (let i = 0; i < keys.length; i++) {
         keyframesRel[prop][i][0] = keys[i][0] - lastAbs
         lastAbs = keys[i][0]
-
     }
 }
