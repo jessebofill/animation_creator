@@ -1832,7 +1832,7 @@ function disableInputs() {
 
 function toggleAnimationMode() {
     animationMode = animationMode === 'absolute' ? 'relative' : 'absolute'
-    deleteAllKeyframes()
+    // deleteAllKeyframes()
 }
 
 function deleteAllKeyframes() {
