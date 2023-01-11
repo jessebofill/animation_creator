@@ -292,6 +292,7 @@ function createVizualizeColorSpan() {
     const alphaBGSpan = createSpan()
     const colorSwatch = createSpan()
     colorSwatch.style('display', 'inline-block')
+    colorSwatch.id('color_swatch')
     colorSwatch.size(35, 17)
     colorSwatch.position(0, 3, 'relative')
     colorSwatch.style('background-color', `rgb(${alphaBackground.r},${alphaBackground.g},${alphaBackground.b})`)
@@ -318,13 +319,16 @@ function createVizualizeColorSpan() {
 function createFrameNumberInput() {
     const span = createSpan()
 
+    const setFps = createFrameRateInput()
+    setFps.style('margin-right', '30px')
+
     const box = createInput()
     textBoxes.frameNumber = box
     box.id('frameInput')
     box.value(frameNumber)
     box.size(50)
     box.attribute('placeholder', 'frame')
-    box.style('margin-right', '15px')
+    box.style('margin-right', '8px')
 
     const button = createButton('Go to frame')
     button.style('margin-right', '20px')
@@ -338,20 +342,32 @@ function createFrameNumberInput() {
     }
 
     textBoxSetup(box, value => value >= 0 && isParsedNum(value, 0), hanldeValidValue, button)
-    parentElements(span, box, button)
+    parentElements(span, setFps, box, button)
 
     return span
 }
 
-function createExportButton() {
+function createSaveLoadExport() {
     const span = createSpan()
 
-    const button = createButton('Export Keyframes')
-    button.style('margin-right', '20px')
-    button.class('disableable')
-    button.mousePressed(exportKeyframes)
+    const saveButton = createButton('Save')
+    const loadButton = createInput()
+    saveButton.class('disableable')
+    loadButton.class('disableable')
+    loadButton.attribute('type', 'file')
+    loadButton.changed(loadAnimation2)
+    // const loadButton = createFileInput(loadAnimation)
+    saveButton.mousePressed(saveAnimation)
 
-    parentElements(span, button)
+    saveButton.style('margin-right', '10px')
+    // loadButton.style('margin-right', '25px')
+
+    const exportButton = createButton('Export Keyframes')
+    exportButton.style('margin-right', '20px')
+    exportButton.class('disableable')
+    exportButton.mousePressed(exportKeyframes)
+
+    parentElements(span, saveButton, loadButton, exportButton)
     return span
 }
 
@@ -459,13 +475,30 @@ function createResizeCanvasSpan() {
     return span
 }
 
+function createSaveLoadExportSpan(){
+    const span = createSpan()
+    const saveButton = createButton('Save')
+    const loadButton = createInput()
+    loadButton.attribute('type', 'file')
+    loadButton.changed(loadAnimation2)
+    // const loadButton = createFileInput(loadAnimation)
+    saveButton.mousePressed(saveAnimation)
+
+    saveButton.style('margin-right', '10px')
+
+    parentElements(span, saveButton, loadButton)
+    return span
+}
+
+
+
 function createUtilityRow() {
     const row = createDiv()
     row.style('display', 'flex')
 
     const resizeCanvasSpan = createResizeCanvasSpan()
     const rectModeSpan = createBoundingBoxSettings()
-    const exportButton = createExportButton()
+    const exportButton = createSaveLoadExport()
 
 
     resizeCanvasSpan.style('flex', '2')
@@ -482,12 +515,10 @@ function createUtilityRow() {
     exportButton.style('white-space', 'nowrap')
     exportButton.style('margin-right', '10px')
 
-    const saveButton = createButton('Save')
-    const loadButton = createFileInput(loadAnimation)
-    saveButton.mousePressed(saveAnimation)
 
 
-    parentElements(row, resizeCanvasSpan, rectModeSpan, saveButton, loadButton, exportButton)
+
+    parentElements(row, resizeCanvasSpan, rectModeSpan, exportButton)
     return row
 }
 
@@ -499,12 +530,14 @@ function createAniModeSpan() {
 
     const aniModeRadio = createRadio('aniModeRadio')
     aniModeRadio.hide()
+    radios.aniMode = aniModeRadio
     aniModeRadio.option('absolute', 'absolute')
     aniModeRadio.option('relative', 'relative')
     aniModeRadio.selected(animationMode)
     aniModeText1.html(aniModeRadio.html(), true)
 
     document.getElementById('aniMode_span').onchange = toggleAnimationMode
+
 
     parentElements(span, aniModeText1)
     return span
@@ -518,6 +551,8 @@ function createFrameRateInput() {
     box.attribute('placeholder', 'FPS')
     box.size(50)
     box.id('fpsbox')
+
+    text.style('margin-right', '8px')
 
     const handle = value => {
         playback.frameRate = parseInt(value)
@@ -540,7 +575,6 @@ function createUtilityRow2() {
 
     const aniModeSpan = createAniModeSpan()
     const colorVisualizer = createVizualizeColorSpan()
-    const setFps = createFrameRateInput()
     const frameSet = createFrameNumberInput()
 
     aniModeSpan.style('flex', '2')
@@ -552,16 +586,12 @@ function createUtilityRow2() {
     colorVisualizer.style('text-align', 'center')
     colorVisualizer.style('white-space', 'nowrap')
 
-    setFps.style('flex', '2')
-    setFps.style('text-align', 'center')
-    setFps.style('white-space', 'nowrap')
-
     frameSet.style('flex', '2')
     frameSet.style('text-align', 'right')
     frameSet.style('white-space', 'nowrap')
     frameSet.style('margin-right', '10px')
 
-    parentElements(row, aniModeSpan, colorVisualizer, setFps, frameSet)
+    parentElements(row, aniModeSpan, colorVisualizer, frameSet)
     return row
 }
 
@@ -1664,10 +1694,16 @@ function exportKeyframes() {
 function saveAnimation() {
     const saveData = {
         absolute: keyframes,
-        relative: keyframesRel
+        relative: keyframesRel,
+        canvas: canvas,
+        aniMode: animationMode,
+        origins: origins,
+        box: boundingBox,
+        colorMode: visualizeColorOnBackground,
+        aBG: alphaBackground
     }
     const blob = new Blob([JSON.stringify(saveData, null, 4)], { type: "application/json" })
-    saveAs(blob, 'export')
+    saveAs(blob, 'saveData')
 }
 
 async function saveAs(blob, type) {
@@ -1699,6 +1735,41 @@ function loadAnimation(save_file) {
     keyframesRel = save_file.data.relative
     loadAnimationTHook()
 }
+function loadAnimation2(save_file) {
+
+    const file = save_file.target.files[0];
+
+    // setting up the reader
+    var reader = new FileReader();
+    reader.readAsText(file, 'UTF-8');
+
+    // here we tell the reader what to do when it's done reading...
+    reader.onload = readerEvent => {
+        const parsedObj = JSON.parse(readerEvent.target.result)
+        console.log('-- > parsedObj', parsedObj)
+
+        keyframes = parsedObj.absolute
+        keyframesRel = parsedObj.relative
+        animationMode = parsedObj.aniMode
+        visualizeColorOnBackground = parsedObj.colorMode
+        Object.assign(canvas, parsedObj.canvas)
+        Object.assign(origins, parsedObj.origins)
+        Object.assign(boundingBox, parsedObj.box)
+        Object.assign(alphaBackground, parsedObj.aBG)
+
+        const vCheck = document.getElementById('showHitBox_check').firstElementChild.firstElementChild
+        vCheck.checked = boundingBox.show
+
+        const i = animationMode === 'absolute' ? 0 : 1
+        document.getElementById('aniMode_span').children[i].children[0].checked = true
+        document.getElementById('color_swatch').style.backgroundColor =`rgb(${alphaBackground.r},${alphaBackground.g},${alphaBackground.b})`
+
+        loadAnimationTHook()
+        setFrameNumber(1)
+    }
+}
+
+
 
 function loadAnimationTHook() {
 
