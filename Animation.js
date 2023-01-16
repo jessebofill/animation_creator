@@ -99,7 +99,7 @@ class Animation {
       
       //guard clause, when animation frame gets to end the animation has completed
       if (this.animationFrame === this.animationDuration) {this.finish(); return }
-      console.log(this.animationFrame)
+    //   console.log(this.animationFrame)
       //the animation frame # will begin counting up (until it reaches specified duration or bounds are met) 
       this.animationFrame++;
       let frame = this.animationFrame - 1               //subtract 1 from animation frame # to use as index into arrays
