@@ -1,6 +1,6 @@
-const versionNumber = '23.1.11'
+const versionNumber = '23.1.15'
 
-const canvas = {
+let canvas = {
     width: 400,
     height: 400
 }
@@ -16,7 +16,7 @@ const animatedProperties = {
     u: 0
 }
 
-const origins = structuredClone(animatedProperties)
+let origins = structuredClone(animatedProperties)
 
 const propValRelativeKey = {
     x: animatedProperties.x - origins.y,
@@ -54,14 +54,14 @@ const lastVals = {}
 
 const propsOrder = ['x', 'y', 'r', 'g', 'b', 'a', 't', 'u']
 
-const boundingBox = {
+let boundingBox = {
     w: 100,
     h: 100,
     show: true,
     rectMode: 'corner'
 }
 
-const alphaBackground = {
+let alphaBackground = {
     r: 150,
     g: 100,
     b: 100,
@@ -194,7 +194,6 @@ const textBoxSetup = (box, validateValue, hanldeValidValue, submitButton) => {
 
     const submitInput = () => {
         let value = box.value()
-        console.log('subumitted: ' + value)
         if (validateValue(value)) {
             value = parseFloat(value)
             hanldeValidValue(value)
@@ -349,8 +348,8 @@ function createFrameNumberInput() {
     return span
 }
 
-function createExportButton(){
-    const exportButton = createButton('Export Keyframes')
+function createExportButton() {
+    const exportButton = createButton('Export')
     exportButton.class('disableable')
     exportButton.mousePressed(exportKeyframes)
     return exportButton
@@ -365,6 +364,7 @@ function createSaveLoadExport() {
     hiddenLoad.setAttribute('type', 'file')
     hiddenLoad.onchange = () => loadAnimation(hiddenLoad)
     saveButton.class('disableable')
+    loadButton.class('disableable')
     // hiddenLoad.class('disableable')
     // hiddenLoad.attribute('type', 'file')
     // hiddenLoad.changed(loadAnimation2)
@@ -373,6 +373,7 @@ function createSaveLoadExport() {
     loadButton.mousePressed(() => hiddenLoad.click())
 
     saveButton.style('margin-right', '10px')
+    loadButton.style('margin-right', '20px')
     // loadButton.style('margin-right', '25px')
 
 
@@ -390,7 +391,7 @@ function createBoundingBoxSettings() {
     checkSpan.html(visualizeCheck.html(), true)
     const element = document.getElementById('showHitBox_check').firstElementChild.firstElementChild
     element.checked = true
-    element.onchange = () => console.log(boundingBox.show = element.checked)
+    element.onchange = () => boundingBox.show = element.checked
 
     const rectModeSpan = createSpan('Rect Mode:')
     rectModeSpan.id('rectMode_radio')
@@ -507,27 +508,27 @@ function createUtilityRow() {
 
     const resizeCanvasSpan = createResizeCanvasSpan()
     const rectModeSpan = createBoundingBoxSettings()
-    const exportButton = createSaveLoadExport()
+    const saveLoad = createSaveLoadExport()
 
 
-    resizeCanvasSpan.style('flex', '2')
+    resizeCanvasSpan.style('flex', '1')
     resizeCanvasSpan.style('text-align', 'left')
     resizeCanvasSpan.style('white-space', 'nowrap')
     resizeCanvasSpan.style('margin-left', '10px')
 
     rectModeSpan.style('text-align', 'center')
-    rectModeSpan.style('flex', '7')
+    rectModeSpan.style('flex', '6')
     rectModeSpan.style('white-space', 'nowrap')
 
-    exportButton.style('text-align', 'right')
-    exportButton.style('flex', '3')
-    exportButton.style('white-space', 'nowrap')
-    exportButton.style('margin-right', '10px')
+    saveLoad.style('text-align', 'right')
+    saveLoad.style('flex', '1')
+    saveLoad.style('white-space', 'nowrap')
+    saveLoad.style('margin-right', '10px')
 
 
 
 
-    parentElements(row, resizeCanvasSpan, rectModeSpan, exportButton)
+    parentElements(row, resizeCanvasSpan, rectModeSpan, saveLoad)
     return row
 }
 
@@ -544,6 +545,8 @@ function createAniModeSpan() {
     aniModeRadio.option('relative', 'relative')
     aniModeRadio.selected(animationMode)
     span.html(aniModeRadio.html(), true)
+    span.style('margin-left', '10px')
+
 
     document.getElementById('aniMode_span').onchange = toggleAnimationMode
 
@@ -584,12 +587,12 @@ function createUtilityRow2() {
     const colorVisualizer = createVizualizeColorSpan()
     const frameSet = createFrameNumberInput()
 
-    colorVisualizer.style('flex', '6')
+    colorVisualizer.style('flex', '2')
     colorVisualizer.style('text-align', 'left')
     colorVisualizer.style('margin-left', '10px')
     colorVisualizer.style('white-space', 'nowrap')
 
-    frameSet.style('flex', '2')
+    frameSet.style('flex', '1')
     frameSet.style('text-align', 'right')
     frameSet.style('white-space', 'nowrap')
     frameSet.style('margin-right', '10px')
@@ -716,10 +719,10 @@ function createPropsSectionHeader(x1, x2, x, x3, x4, x5, x6, x7, x8, x9, radioMa
     const expo2 = createSpan('expo2')
     const expo3 = createSpan('expo3')
     const addAllButton = createButton('Key All')
-    const exportText = createSpan('Export')
+    const exportButton = createExportButton()
     const rename = createSpan('Export As')
-    // const aniMode = createAniModeSpan()
-    const invert = createSpan('Invert Relative')
+    const aniMode = createAniModeSpan()
+    const invert = createSpan('Invert')
 
     originButton.class('disableable')
     addAllButton.class('disableable')
@@ -737,10 +740,10 @@ function createPropsSectionHeader(x1, x2, x, x3, x4, x5, x6, x7, x8, x9, radioMa
     addKey1.position(x5)
     addKey2.position(x5, 20)
     addAllButton.position(x6)
-    exportText.position(x7)
+    exportButton.position(x7)
     rename.position(x8, 25)
     invert.position(x9, 25)
-    // aniMode.position(x9)
+    aniMode.position(x8)
 
     abs1.id('valueLine1')
     abs2.id('valueLine2')
@@ -759,7 +762,7 @@ function createPropsSectionHeader(x1, x2, x, x3, x4, x5, x6, x7, x8, x9, radioMa
         }
     })
 
-    parentElements(row, propName, abs1, abs2, rel1, rel2, originButton, interpType, linear, addKey1, addKey2, expo1, expo2, expo3, addAllButton, exportText, rename, invert)
+    parentElements(row, propName, abs1, abs2, rel1, rel2, originButton, interpType, linear, addKey1, addKey2, expo1, expo2, expo3, addAllButton, exportButton, aniMode, rename, invert)
     return row
 }
 
@@ -832,14 +835,14 @@ function createSetOrigins(prop, x) {
 
 function createExportCheck(prop, x) {
     const id = prop + '_exportCheck'
-    const checkHtml = '<label><input type="checkbox" id="' + id + '" style="position: absolute; left: ' + x + 'px;"></label>'
+    const checkHtml = '<label><input type="checkbox" id="' + id + '" style="position: absolute; left: ' + (x + 25) + 'px;"></label>'
 
     return checkHtml
 }
 
 function createInvertRelCheck(prop, x) {
     const id = prop + '_invertRelCheck'
-    const checkHtml = '<label><input type="checkbox" id="' + id + '" style="position: absolute; left: ' + x + 'px;"></label>'
+    const checkHtml = '<label><input type="checkbox" class="invertCheck" id="' + id + '" style="position: absolute; left: ' + x + 'px;" disabled></label>'
     return checkHtml
 }
 
@@ -850,7 +853,7 @@ function createPropEditorDiv() {
         '255, 200, 120',
         '255, 165, 190'
     ]
-    const x = [65, 110, 185, 0, 300, 390, 470, 700, 740, 830]
+    const x = [65, 110, 185, 0, 300, 390, 470, 700, 765, 855]
     const inputBoxSize = [30, 15]
     const radioMargin = 48
     const container = createDiv()
@@ -897,9 +900,11 @@ function createPropEditorDiv() {
     }
 
     document.querySelectorAll('input[type="radio"]').forEach((element) => {
-        element.style.marginLeft = '0px';
-        element.style.position = 'absolute';
-        element.style.left = x[6] + radioMargin * interpTypes.indexOf(element.value) + 'px';
+        if (element.value == 'linear' || element.value == 'expo1' || element.value == 'expo2' || element.value == 'expo3') {
+            element.style.marginLeft = '0px';
+            element.style.position = 'absolute';
+            element.style.left = x[6] + radioMargin * interpTypes.indexOf(element.value) + 'px';
+        }
     })
 
     const rgbaSliders = createRGBASliderRow()
@@ -929,8 +934,9 @@ function setup() {
     const utilityRow2 = createUtilityRow2()
 
     resizeCanvasWrapper = (w, h) => {
-        console.log('resize')
         resizeCanvas(w, h)
+        canvas.width = w
+        canvas.height = h
         rightOfCanvas.position(w + 40, 20)
     }
 
@@ -950,21 +956,13 @@ function draw() {
 
     let x, y, r, g, b, a
     // if (animationMode === 'absolute' || playback.holdLastVal) {
-    if (true) {
-        x = animatedProperties.x
-        y = animatedProperties.y
-        r = animatedProperties.r
-        g = animatedProperties.g
-        b = animatedProperties.b
-        a = animatedProperties.a
-    } else {
-        r = origins.r + propOffsets.r
-        g = origins.g + propOffsets.g
-        b = origins.b + propOffsets.b
-        a = origins.a + propOffsets.a
-        x = origins.x + propOffsets.x
-        y = origins.y + propOffsets.y
-    }
+
+    x = animatedProperties.x
+    y = animatedProperties.y
+    r = animatedProperties.r
+    g = animatedProperties.g
+    b = animatedProperties.b
+    a = animatedProperties.a
 
     if (visualizeColorOnBackground) background(r, g, b);
     else background(alphaBackground.r, alphaBackground.g, alphaBackground.b);
@@ -1136,7 +1134,6 @@ const timelineInstance = (timeline) => {
     timeline.deleteKeyframeHandle = (keyframe, prop) => {
         //clickedKeyframeHandle = undefined
         let i = keyframeHandles.findIndex((handle) => handle.keyframe === keyframe && prop === handle.prop)
-        console.log('handle: ' + i)
         keyframeHandles.splice(i, 1)
     }
 
@@ -1203,7 +1200,6 @@ const timelineInstance = (timeline) => {
             let frame = timeline.xCoordToClosestFrameNum(xx)
             let newX = timeline.frameNumToXCoord(frame)
             if (this.x !== newX) {
-                console.log('changed')
                 this.highlight = true
                 this.x = newX
             }
@@ -1335,7 +1331,6 @@ const timelineInstance = (timeline) => {
                 setFrameNumber((page * framesPerPage) - 1)
             }
         }
-        console.log('pasd ' + page)
     }
 
     timeline.mouseDraggedOut = (side) => {
@@ -1396,7 +1391,7 @@ const timelineInstance = (timeline) => {
         sliderSpan.style('flex', '7')
         sliderSpan.style('margin-left', '10px')
         // sliderSpan.style('white-space', 'nowrap')
-    
+
         ver.style('text-align', 'right')
         ver.style('flex', '3')
         // ver.style('white-space', 'nowrap')
@@ -1676,11 +1671,9 @@ function findKeyIndexForFrame(frame, prop) {
 function findKeyIndexAtFrame(frame, prop) {
     for (let i = 0; i < keyframes[prop].length; i++) {
         if (frame === keyframes[prop][i][1]) {
-            console.log('I: ' + i)
             return i
         }
     }
-    console.log('I: ' + -1)
     return -1
 }
 
@@ -1729,13 +1722,21 @@ function changeInterp(keyframe, relKey, type) {
     relKey[2] = interpTypes[i]
 }
 
+function invertRelativeKeyframes(prop) {
+    const keys = structuredClone(keyframesRel[prop])
+    for (let keyframe of keys) {
+        keyframe[0] *= -1
+    }
+    return keys
+}
+
 function exportKeyframes() {
     const keys = {}
     for (let prop in keyframes) {
         if (!document.getElementById(prop + '_exportCheck').checked) continue
         const renameString = textBoxes[prop + '_rename'].value()
         const newProp = renameString.length > 0 ? renameString : prop
-        keys[newProp] = animationMode === 'absolute' ? keyframes[prop] : keyframesRel[prop]
+        keys[newProp] = animationMode === 'absolute' ? keyframes[prop] : document.getElementById(prop + '_invertRelCheck').checked ? invertRelativeKeyframes(prop) : keyframesRel[prop]
     }
     const blob = new Blob([JSON.stringify(keys, null, 4)], { type: "application/json" })
     saveAs(blob, 'export')
@@ -1755,7 +1756,6 @@ function saveAnimation() {
         absolute: keyframes,
         relative: keyframesRel,
         canvas: canvas,
-        aniMode: animationMode,
         origins: origins,
         box: boundingBox,
         colorMode: visualizeColorOnBackground,
@@ -1799,7 +1799,6 @@ function loadAnimation2(save_file) {
     // here we tell the reader what to do when it's done reading...
     reader.onload = readerEvent => {
         const parsedObj = JSON.parse(readerEvent.target.result)
-        console.log('-- > parsedObj', parsedObj)
 
         keyframes = parsedObj.absolute
         keyframesRel = parsedObj.relative
@@ -1823,7 +1822,6 @@ function loadAnimation2(save_file) {
 }
 
 function loadAnimation(save_file) {
-
     const file = save_file.files[0];
 
     // setting up the reader
@@ -1833,22 +1831,29 @@ function loadAnimation(save_file) {
     // here we tell the reader what to do when it's done reading...
     reader.onload = readerEvent => {
         const parsedObj = JSON.parse(readerEvent.target.result)
-        console.log('-- > parsedObj', parsedObj)
 
         keyframes = parsedObj.absolute
         keyframesRel = parsedObj.relative
-        animationMode = parsedObj.aniMode
         visualizeColorOnBackground = parsedObj.colorMode
-        Object.assign(canvas, parsedObj.canvas)
-        Object.assign(origins, parsedObj.origins)
-        Object.assign(boundingBox, parsedObj.box)
-        Object.assign(alphaBackground, parsedObj.aBG)
+        canvas = parsedObj.canvas
+        origins = parsedObj.origins
+        boundingBox = parsedObj.box
+        alphaBackground = parsedObj.aBG
+
+        resizeCanvasWrapper(canvas.width, canvas.height)
+        document.getElementById('w_canvasBox').value = canvas.width
+        document.getElementById('h_canvasBox').value = canvas.height
+        document.getElementById('w_boundingBox').value = boundingBox.w
+        document.getElementById('h_boundingBox').value = boundingBox.h
 
         const vCheck = document.getElementById('showHitBox_check').firstElementChild.firstElementChild
         vCheck.checked = boundingBox.show
 
-        const i = animationMode === 'absolute' ? 0 : 1
-        // document.getElementById('aniMode_span').children[i].children[0].checked = true
+        rectMode(boundingBox.rectMode)
+        const i = boundingBox.rectMode === 'corner' ? 0 : 1
+        document.getElementById('rectMode_radio').children[i].children[0].checked = true
+        const i2 = visualizeColorOnBackground ? 0 : 1
+        document.getElementById('colorMode_radio').children[i2].children[0].checked = true
         document.getElementById('color_swatch').style.backgroundColor = `rgb(${alphaBackground.r},${alphaBackground.g},${alphaBackground.b})`
 
         loadAnimationTHook()
@@ -1919,6 +1924,9 @@ function disableInputs() {
 
 function toggleAnimationMode() {
     animationMode = animationMode === 'absolute' ? 'relative' : 'absolute'
+    document.querySelectorAll('.invertCheck').forEach(element => {
+        element.disabled = animationMode === 'absolute'
+    })
     // deleteAllKeyframes()
 }
 
